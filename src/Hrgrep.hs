@@ -9,7 +9,7 @@ getRecursiveContents :: FilePath -> IO [FilePath]
 
 getRecursiveContents topdir = do
   names <- getDirectoryContents topdir
-  let properNames = filter (`notElem` [".", ".."]) names
+  let properNames = filter (`notElem` [".", "..", ".git"]) names  --  don't scan .git
   paths <- forM properNames $ \name -> do
     let path = topdir </> name
     isDirectory <- doesDirectoryExist path
@@ -28,10 +28,14 @@ scanForPattern (fileName:paths) pattern = do
   scanForPattern paths pattern
 
 scanFile file fileName pattern n = do
-    ineof <- hIsEOF file
-    if ineof
-            then return ()
-            else do
+    readable <- hIsReadable file
+    if not readable
+        then return ()
+        else do
+            ineof <- hIsEOF file
+            if ineof
+              then return ()
+              else do
                     line <- hGetLine file
                     if line =~ pattern
                        then do
